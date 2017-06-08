@@ -2,17 +2,20 @@
 
 angular.module('myApp.view1', ['ngRoute'])
 
-.config(['$routeProvider', function($routeProvider) {
-  $routeProvider.when('/view1', {
-    templateUrl: 'view1/view1.html',
-    controller: 'View1Ctrl'
-  });
-}])
+  .config(['$routeProvider', function($routeProvider) {
+    $routeProvider.when('/view1', {
+      templateUrl: 'view1/view1.html',
+      controller: 'View1Ctrl'
+    });
+  }])
 
-.controller('View1Ctrl', function($scope, $http) {
+  .controller('View1Ctrl', function($scope, $http) {
 
-  $scope.init = function () {
-    $http.get('data/reply_tweets.json').success(function(file) {
+    //Read File after User selects .txt Daten File
+    //Parse the data line for line and call process Data function
+    document.getElementById('file').onchange = function(){
+
+      var file = this.files[0];
 
       var reader = new FileReader();
       reader.onload = function(progressEvent){
@@ -21,15 +24,25 @@ angular.module('myApp.view1', ['ngRoute'])
 
         // By lines
         var lines = this.result.split('\n');
+        var data = [];
         for(var line = 0; line < lines.length; line++){
           console.log(lines[line]);
+          if(lines[line].length != 0)
+            data.push(JSON.parse(lines[line]));
         }
+        $scope.processData(data)
       };
       reader.readAsText(file);
+    };
 
-    });
 
-  }
+    $scope.processData = function (data) {
+      var users = [];
 
-  $scope.init();
-});
+      data.forEach(function (line) {
+        users.push(line.usr);
+      });
+
+
+    }
+  });
