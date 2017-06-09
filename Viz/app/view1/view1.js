@@ -9,7 +9,7 @@ angular.module('myApp.view1', ['ngRoute'])
     });
   }])
 
-  .controller('View1Ctrl', function($scope, $http) {
+  .controller('View1Ctrl', function($scope) {
 
     $scope.android_count = $scope.iphone_count = $scope.web_client_count = $scope.other_count = $scope.windows_count = 0;
     $scope.processed_chunks = 0;
@@ -25,24 +25,24 @@ angular.module('myApp.view1', ['ngRoute'])
 
        var reader = new FileReader();
        reader.onload = function(progressEvent){
-         // Entire file
-         //console.log(this.result);
-
-         // By lines
          var lines = this.result.split('\n');
          var data = [];
          for(var line = 1; line < lines.length - 1; line++){
            if(lines[line].length != 0)
              data.push(JSON.parse(lines[line]));
          }
+        //-------DEVICE CHART-------------------------------------------------------------------------------------------
          $scope.countDevices(data, function () {
            $scope.processed_chunks = $scope.processed_chunks + 1;
            if($scope.processed_chunks === $scope.file_chunks)
            {
              clearInterval($scope.loading_id);
-             $scope.createChart($scope.android_count,$scope.windows_count, $scope.windows_count, $scope.web_client_count, $scope.other_count)
+             var labels = ["Android", "Iphone", "Windows", "Web Client","Other"];
+             var counts = [$scope.android_count,$scope.iphone_count, $scope.windows_count, $scope.web_client_count, $scope.other_count];
+             $scope.createBarChart(labels, counts)
            }
          })
+         //-------------------------------------------------------------------------------------------------------------
        };
        reader.onloadend = function () {
          $scope.start_time = new Date();
@@ -54,6 +54,7 @@ angular.module('myApp.view1', ['ngRoute'])
     };
 
 
+    ///---------------------------------------------------------------------------------------------------
     $scope.countDevices = function (data, callback_) {
       for(var index = 0; index < data.length; index++){
        if(data[index].src.indexOf("Android") != -1)
@@ -71,20 +72,20 @@ angular.module('myApp.view1', ['ngRoute'])
       {
         $scope.end_time = new Date();
         var timeDiff = $scope.end_time - $scope.start_time;
-        $scope.increase(timeDiff);
+        $scope.startProgressBar(timeDiff);
       }
       callback_();
     }
 
-    $scope.createChart = function (android_count, iphone_count, windows_count, web_client, other_count) {
+    $scope.createBarChart = function (labels, counts) {
       var ctx = document.getElementById("myChart");
       var myChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ["Android", "Iphone", "Windows", "Web Client","Other"],
+          labels: labels,
           datasets: [{
             label: '# of Device',
-            data: [android_count, iphone_count, windows_count, web_client, other_count],
+            data: counts,
             backgroundColor: [
               'rgba(255, 99, 132, 0.2)',
               'rgba(54, 162, 235, 0.2)',
@@ -158,11 +159,11 @@ angular.module('myApp.view1', ['ngRoute'])
       }
     }
 
-    $scope.increase = function(timeDiff) {
+    $scope.startProgressBar = function(timeDiff) {
         var elem = document.getElementById("myBar");
         var little_bit = 100/$scope.file_chunks;
         var width = 1;
-        $scope.loading_id = setInterval(frame, timeDiff- 10);
+        $scope.loading_id = setInterval(frame, (timeDiff- 50));
         function frame() {
           if (width >= 100) {
             clearInterval($scope.loading_id);
