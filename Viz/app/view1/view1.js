@@ -14,13 +14,14 @@ angular.module('myApp.view1', ['ngRoute'])
     $scope.android_count = $scope.iphone_count = $scope.web_client_count = $scope.other_count = $scope.windows_count = 0;
     $scope.processed_chunks = 0;
     $scope.file_chunks = 0;
+    $scope.index = 0;
 
     //Read File after User selects .txt Daten File
     //Parse the data line for line and call process Data function
     document.getElementById('file').onchange = function(){
 
       var file = this.files[0];
-     $scope.findColumnLength(file, function (chunks) {
+      $scope.findColumnLength(file, function (chunks) {
 
        var reader = new FileReader();
        reader.onload = function(progressEvent){
@@ -30,20 +31,25 @@ angular.module('myApp.view1', ['ngRoute'])
          // By lines
          var lines = this.result.split('\n');
          var data = [];
-         for(var line = 0; line < lines.length - 1; line++){
-           console.log(lines[line]);
+         for(var line = 1; line < lines.length - 1; line++){
            if(lines[line].length != 0)
              data.push(JSON.parse(lines[line]));
          }
          $scope.countDevices(data, function () {
            $scope.processed_chunks = $scope.processed_chunks + 1;
            if($scope.processed_chunks === $scope.file_chunks)
+           {
+             clearInterval($scope.loading_id);
              $scope.createChart($scope.android_count,$scope.windows_count, $scope.windows_count, $scope.web_client_count, $scope.other_count)
+           }
          })
        };
-       chunks.forEach(function (chunk) {
-         setTimeout(reader.readAsText(chunk), 3000);
-       });
+       reader.onloadend = function () {
+         $scope.start_time = new Date();
+         if($scope.index < $scope.file_chunks) reader.readAsText(chunks[$scope.index++]);
+
+       }
+        reader.readAsText(chunks[$scope.index++]);
      })
     };
 
@@ -61,6 +67,12 @@ angular.module('myApp.view1', ['ngRoute'])
        else
          $scope.other_count = $scope.other_count + 1;
       };
+      if($scope.index == 2)
+      {
+        $scope.end_time = new Date();
+        var timeDiff = $scope.end_time - $scope.start_time;
+        $scope.increase(timeDiff);
+      }
       callback_();
     }
 
@@ -104,7 +116,7 @@ angular.module('myApp.view1', ['ngRoute'])
 
     $scope.findColumnLength = function(file, callback) {
       // 1 KB at a time, because we expect that the column will probably small.
-      var CHUNK_SIZE = 50000000;
+      var CHUNK_SIZE = 10000000;
       var offset = 0;
       var fr = new FileReader();
       fr.onload = function() {
@@ -146,5 +158,18 @@ angular.module('myApp.view1', ['ngRoute'])
       }
     }
 
-
+    $scope.increase = function(timeDiff) {
+        var elem = document.getElementById("myBar");
+        var little_bit = 100/$scope.file_chunks;
+        var width = 1;
+        $scope.loading_id = setInterval(frame, timeDiff- 10);
+        function frame() {
+          if (width >= 100) {
+            clearInterval($scope.loading_id);
+          } else {
+            width = width + little_bit;
+            elem.style.width = width + '%';
+          }
+        }
+      }
   });
